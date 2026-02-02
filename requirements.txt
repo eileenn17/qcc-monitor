@@ -1,0 +1,4 @@
+playwright==1.45.0
+openpyxl==3.1.5
+pandas==2.2.0
+python-dotenv==1.0.0
