@@ -1,6 +1,0 @@
-2026/01/27-16:50:57.170 3103 Reusing MANIFEST /Users/eileen_zhong/25-02智慧温江实习/qcc_monitor/chrome_profile/Default/Local Storage/leveldb/MANIFEST-000001
-2026/01/27-16:50:57.172 3103 Recovering log #20
-2026/01/27-16:50:57.173 3103 Reusing old log /Users/eileen_zhong/25-02智慧温江实习/qcc_monitor/chrome_profile/Default/Local Storage/leveldb/000020.log 
-2026/01/27-16:53:57.592 3303 Level-0 table #24: started
-2026/01/27-16:53:57.600 3303 Level-0 table #24: 66552 bytes OK
-2026/01/27-16:53:57.611 3303 Delete type=0 #20
