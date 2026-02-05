@@ -35,6 +35,7 @@ wheels/
 .DS_Store
 
 # 项目相关
+input/
 output/
 logs/
 *.xlsx
@@ -48,3 +49,5 @@ chrome_profile/
 # 临时文件
 *.tmp
 *.log
+
+

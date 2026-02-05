@@ -17,8 +17,7 @@ CHROME_USER_DATA_DIR = os.getenv(
     os.path.expanduser('~/Library/Application Support/Google/Chrome')
 )
 OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'output')
-_input_file = os.getenv('INPUT_FILE', '企业名单（爬虫测试版）.xlsx')
-INPUT_FILE = str(BASE_DIR / _input_file) if _input_file else str(BASE_DIR / '企业名单（爬虫测试版）.xlsx')
+INPUT_FILE = str(BASE_DIR / 'input' / '企业名单（爬虫测试版）.xlsx')
 OUTPUT_FILE = str(BASE_DIR / 'output' / '企业社交媒体账号库.xlsx')
 
 # 创建输出目录
