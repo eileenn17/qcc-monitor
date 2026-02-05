@@ -35,6 +35,9 @@ class QccScraper:
             target_link = self.page.locator(f"a:has-text('{company_name}')").first
             actual_click_name = company_name  # 默认为搜索名称
 
+            # 初始化曾用名列表
+            former_names = []
+
             try:
                 await target_link.wait_for(state='visible', timeout=5000)
             except:
@@ -44,12 +47,30 @@ class QccScraper:
                 actual_click_name = await target_link.text_content()
                 actual_click_name = actual_click_name.strip() if actual_click_name else company_name
 
-            # 获取实际点击的链接文本
-            if actual_click_name == company_name:
-                actual_click_name = company_name
-            else:
-                actual_click_name = await target_link.text_content()
-                actual_click_name = actual_click_name.strip() if actual_click_name else company_name
+            # 获取曾用名
+            try:
+                # 使用 xpath 向上查找最近的 div.maininfo
+                maininfo_container = target_link.locator("xpath=./ancestor::div[contains(@class, 'maininfo')]").first
+
+                if await maininfo_container.count() > 0:
+                    # 在容器内查找曾用名，查找包含"曾用名"文本的 app-hit-reasons 下的所有 em 标签
+                    ems = await maininfo_container.locator(".app-hit-reasons:has-text('曾用名') em").all()
+
+                    for em in ems:
+                        txt = await em.text_content()
+                        if txt and txt.strip():
+                            # 清理可能存在的标点
+                            clean_name = txt.strip().replace(";", "").replace("，", "")
+                            former_names.append(clean_name)
+
+                    if former_names:
+                        print(f"   ⚡️ [列表页] 发现曾用名: {former_names}")
+                else:
+                    # 备用：如果 maininfo 没找到，尝试找 tr (针对旧版页面)
+                    pass
+
+            except Exception as e:
+                print(f"   ⚠️ 列表页提取曾用名跳过: {e}")
 
             async with self.page.context.expect_page() as new_page_info:
                 await target_link.click()
@@ -57,10 +78,11 @@ class QccScraper:
             self.detail_page = await new_page_info.value
             await self.detail_page.wait_for_load_state('domcontentloaded')
             print(f"📄 [2/3] 进入详情页: {await self.detail_page.title()}")
-            return True, actual_click_name
+            return True, actual_click_name, former_names
+
         except Exception as e:
             print(f"❌ 搜索进入失败: {e}")
-            return False, company_name
+            return False, company_name, []
 
     async def _auto_scroll(self):
         """【新增】自动滚屏，触发懒加载"""
@@ -270,11 +292,12 @@ class QccScraper:
             # print(f"   ⚠️ 提取 {tab_name} 列表出错: {e}") # 调试时可打开
             return []
 
-    async def scrape_details(self, company_name: str, actual_click_name: str = None) -> Dict:
+    async def scrape_details(self, company_name: str, actual_click_name: str = None, former_names: List[str] = None) -> Dict:
         """[3/3] 提取详细信息"""
         data = {
             'company_name': company_name,
             'actual_click_name': actual_click_name or company_name,
+            'former_names': former_names or [],
             'wechat_list': [],
             'weibo_list': [],
             'status': 'success',
@@ -335,11 +358,23 @@ class QccScraper:
         for i, company in enumerate(company_list):
             print(f"\n[{i+1}/{len(company_list)}] 处理: {company}")
 
-            success, actual_click_name = await self.search_and_enter(company)
+            success, actual_click_name, former_names_list = await self.search_and_enter(company)
+
             if success:
-                raw_data = await self.scrape_details(company, actual_click_name)
+                raw_data = await self.scrape_details(company, actual_click_name, former_names_list)
                 # 添加匹配状态到数据中
-                raw_data['match_status'] = '匹配' if company == actual_click_name else '不匹配'
+                is_name_match = actual_click_name == company
+                is_former_match = company in former_names_list
+                
+                if is_name_match:
+                    match_status = '匹配'
+                elif is_former_match:
+                    match_status = '曾用名匹配' # 只要曾用名对上了，也算匹配
+                    print(f"   ✨ 通过曾用名判定为匹配: {company}")
+                else:
+                    match_status = '不匹配'
+
+                raw_data['match_status'] = match_status 
                 all_raw_data.append(raw_data)
 
                 wait = random.uniform(2, 4)

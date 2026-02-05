@@ -68,6 +68,7 @@ class DataHandler:
             company_name = data.get('company_name', '')
             actual_click_name = data.get('actual_click_name', company_name)  # 新增字段
             match_status = data.get('match_status', 'matched')  # 新增字段
+            former_names = data.get('former_names', [])  # 曾用名列表
             wechat_list = data.get('wechat_list', [])
             weibo_list = data.get('weibo_list', [])
             status = data.get('status', '')
@@ -80,12 +81,14 @@ class DataHandler:
                 # === 第一部分：公司基本信息 ===
                 if i == 0:
                     row['公司名称'] = company_name
-                    row['实际点击公司名'] = actual_click_name  # 新增字段
-                    row['搜索匹配状态'] = match_status  # 新增字段
+                    row['实际点击公司名'] = actual_click_name  
+                    row['曾用名'] = ', '.join(former_names) if former_names else '无'
+                    row['搜索匹配状态'] = match_status 
                     row['微信公众号总个数'] = len(wechat_list)
                 else:
                     row['公司名称'] = ''
                     row['实际点击公司名'] = ''
+                    row['曾用名'] = ''
                     row['搜索匹配状态'] = ''
                     row['微信公众号总个数'] = ''
 
@@ -154,6 +157,7 @@ class DataHandler:
             columns = [
                 '公司名称',
                 '实际点击公司名',
+                '曾用名',
                 '搜索匹配状态',
                 '微信公众号总个数', '序号(微信)', '头像(微信)', '微信公众号名称', '微信号', '二维码',
                 '微博账号总个数', '序号(微博)', '头像(微博)', '微博昵称', '微博链接',
