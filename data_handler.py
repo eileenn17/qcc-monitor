@@ -1,5 +1,5 @@
 """
-数据读写处理模块 (适配复杂 Excel 表头 + 微博链接 + 无数据标记)
+数据读写处理模块 (适配复杂 Excel 表头 + 微博链接 + 无数据标记 + 搜索匹配状态)
 """
 from pathlib import Path
 from typing import List, Dict
@@ -7,22 +7,22 @@ import pandas as pd
 import config
 
 class DataHandler:
-    
+
     @staticmethod
     def read_company_list(file_path: str = None) -> List[str]:
         """读取企业名单"""
         if file_path is None: file_path = config.INPUT_FILE
-        
+
         try:
             file_path = Path(file_path)
             print(f"📁 正在读取 Excel: {file_path.name}")
-            
+
             df = pd.read_excel(file_path, header=None)
-            
+
             target_col_index = -1
             start_row_index = -1
             found = False
-            
+
             # 智能扫描表头
             for r in range(min(5, len(df))):
                 for c in range(len(df.columns)):
@@ -34,7 +34,7 @@ class DataHandler:
                         found = True
                         break
                 if found: break
-            
+
             if found:
                 raw_names = df.iloc[start_row_index:, target_col_index].dropna().astype(str).tolist()
             else:
@@ -49,7 +49,7 @@ class DataHandler:
                 name = name.strip()
                 if len(name) > 1 and not name.isdigit() and "企业名称" not in name:
                     clean_names.append(name)
-            
+
             print(f"✅ 成功提取 {len(clean_names)} 家有效企业")
             return clean_names
 
@@ -61,11 +61,13 @@ class DataHandler:
     def save_formatted_results(raw_data_list: List[Dict], output_file: str = None):
         """核心保存函数"""
         if output_file is None: output_file = config.OUTPUT_FILE
-        
+
         excel_rows = []
 
         for data in raw_data_list:
             company_name = data.get('company_name', '')
+            actual_click_name = data.get('actual_click_name', company_name)  # 新增字段
+            match_status = data.get('match_status', 'matched')  # 新增字段
             wechat_list = data.get('wechat_list', [])
             weibo_list = data.get('weibo_list', [])
             status = data.get('status', '')
@@ -74,13 +76,17 @@ class DataHandler:
 
             for i in range(max_rows):
                 row = {}
-                
+
                 # === 第一部分：公司基本信息 ===
                 if i == 0:
                     row['公司名称'] = company_name
+                    row['实际点击公司名'] = actual_click_name  # 新增字段
+                    row['搜索匹配状态'] = match_status  # 新增字段
                     row['微信公众号总个数'] = len(wechat_list)
                 else:
                     row['公司名称'] = ''
+                    row['实际点击公司名'] = ''
+                    row['搜索匹配状态'] = ''
                     row['微信公众号总个数'] = ''
 
                 # === 第二部分：微信详情 ===
@@ -122,7 +128,7 @@ class DataHandler:
                     row['序号(微博)'] = wb.get('seq', '')
                     row['头像(微博)'] = wb.get('avatar', '')
                     row['微博昵称'] = wb.get('name', '')
-                    row['微博链接'] = wb.get('link', '') 
+                    row['微博链接'] = wb.get('link', '')
                 else:
                     # 没有数据，或者行数超出的情况
                     if i == 0 and len(weibo_list) == 0:
@@ -141,28 +147,30 @@ class DataHandler:
                 # === 第五部分：状态 ===
                 if i == 0:
                     row['status'] = status
-                
+
                 excel_rows.append(row)
 
         try:
             columns = [
-                '公司名称', 
+                '公司名称',
+                '实际点击公司名',
+                '搜索匹配状态',
                 '微信公众号总个数', '序号(微信)', '头像(微信)', '微信公众号名称', '微信号', '二维码',
                 '微博账号总个数', '序号(微博)', '头像(微博)', '微博昵称', '微博链接',
-                'status' 
+                'status'
             ]
-            
+
             df = pd.DataFrame(excel_rows)
             for col in columns:
                 if col not in df.columns:
                     df[col] = ''
-            
+
             df = df[columns]
 
             path = Path(output_file)
             path.parent.mkdir(parents=True, exist_ok=True)
             df.to_excel(path, index=False)
             print(f"✅ Excel 已更新: {output_file}")
-            
+
         except Exception as e:
             print(f"❌ 保存 Excel 失败: {e}")

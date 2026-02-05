@@ -43,6 +43,7 @@ logs/
 
 # 浏览器数据
 /.chrome-data/
+chrome_profile/
 
 # 临时文件
 *.tmp
