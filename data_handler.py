@@ -48,7 +48,9 @@ class DataHandler:
             for name in raw_names:
                 name = name.strip()
                 if len(name) > 1 and not name.isdigit() and "企业名称" not in name:
-                    clean_names.append(name)
+                    # 规范化括号：将英文括号转换为中文括号
+                    normalized_name = DataHandler.normalize_brackets(name)
+                    clean_names.append(normalized_name)
 
             print(f"✅ 成功提取 {len(clean_names)} 家有效企业")
             return clean_names
@@ -56,6 +58,20 @@ class DataHandler:
         except Exception as e:
             print(f"❌ 读取失败: {e}")
             return []
+
+    @staticmethod
+    def normalize_brackets(text: str) -> str:
+        """规范化括号：将英文括号转换为中文括号"""
+        bracket_mapping = {
+            '(': '（',
+            ')': '）'
+        }
+        
+        result = text
+        for eng, chn in bracket_mapping.items():
+            result = result.replace(eng, chn)
+        
+        return result
 
     @staticmethod
     def save_formatted_results(raw_data_list: List[Dict], output_file: str = None):

@@ -32,7 +32,10 @@ class QccScraper:
 
             await self.page.wait_for_load_state('domcontentloaded')
 
-            target_link = self.page.locator(f"a:has-text('{company_name}')").first
+            # 使用规范化后的公司名称进行搜索
+            from data_handler import DataHandler
+            normalized_company_name = DataHandler.normalize_brackets(company_name)
+            target_link = self.page.locator(f"a:has-text('{normalized_company_name}')").first
             actual_click_name = company_name  # 默认为搜索名称
 
             # 初始化曾用名列表
@@ -363,8 +366,15 @@ class QccScraper:
             if success:
                 raw_data = await self.scrape_details(company, actual_click_name, former_names_list)
                 # 添加匹配状态到数据中
-                is_name_match = actual_click_name == company
-                is_former_match = company in former_names_list
+                # 使用规范化后的括号进行比较
+                from data_handler import DataHandler
+                normalized_company = DataHandler.normalize_brackets(company)
+                normalized_actual = DataHandler.normalize_brackets(actual_click_name)
+                
+                is_name_match = normalized_actual == normalized_company
+                # 对曾用名列表中的每个名称也进行规范化比较
+                normalized_former_names = [DataHandler.normalize_brackets(name) for name in former_names_list]
+                is_former_match = normalized_company in normalized_former_names
                 
                 if is_name_match:
                     match_status = '匹配'
@@ -390,8 +400,6 @@ class QccScraper:
                 })
 
             if (i + 1) % 2 == 0:
-                from data_handler import DataHandler
                 DataHandler.save_formatted_results(all_raw_data)
 
-        from data_handler import DataHandler
         DataHandler.save_formatted_results(all_raw_data)
